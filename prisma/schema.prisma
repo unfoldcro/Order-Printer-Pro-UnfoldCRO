@@ -1,0 +1,101 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Session {
+  id          String    @id
+  shop        String
+  state       String
+  isOnline    Boolean   @default(false)
+  scope       String?
+  expires     DateTime?
+  accessToken String
+  userId      BigInt?
+  firstName   String?
+  lastName    String?
+  email       String?
+  accountOwner Boolean  @default(false)
+  locale      String?
+  collaborator Boolean? @default(false)
+  emailVerified Boolean? @default(false)
+}
+
+model Template {
+  id        String   @id @default(cuid())
+  shop      String
+  type      TemplateType
+  name      String
+  html      String   @db.Text
+  css       String   @db.Text @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([shop])
+}
+
+enum TemplateType {
+  INVOICE
+  PACKING_SLIP
+}
+
+model Settings {
+  id              String   @id @default(cuid())
+  shop            String   @unique
+  autoSendEnabled Boolean  @default(false)
+  trigger         EmailTrigger @default(ORDER_PAID)
+  emailSubject    String   @default("Your invoice for {{order.name}}")
+  fromName        String   @default("")
+  fromEmail       String   @default("")
+  updatedAt       DateTime @updatedAt
+}
+
+enum EmailTrigger {
+  ORDER_CREATED
+  ORDER_PAID
+}
+
+model Job {
+  id          String    @id @default(cuid())
+  shop        String
+  type        JobType
+  payloadJson String    @db.Text
+  status      JobStatus @default(PENDING)
+  attempts    Int       @default(0)
+  lastError   String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  @@index([shop, status])
+}
+
+enum JobType {
+  SEND_DOCUMENT
+  BULK_EXPORT
+}
+
+enum JobStatus {
+  PENDING
+  RUNNING
+  SUCCESS
+  FAILED
+}
+
+model Log {
+  id        String    @id @default(cuid())
+  shop      String
+  action    LogAction
+  orderId   String?
+  status    String
+  message   String
+  createdAt DateTime  @default(now())
+  @@index([shop, createdAt])
+}
+
+enum LogAction {
+  PDF_GENERATED
+  EMAIL_SENT
+  ERROR
+}
