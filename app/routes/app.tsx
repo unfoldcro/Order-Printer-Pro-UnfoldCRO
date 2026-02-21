@@ -19,10 +19,12 @@ export default function App() {
   return (
     <AppProvider isEmbeddedApp apiKey={apiKey}>
       <NavMenu>
-        <a href="/app" rel="home">Dashboard</a>
-        <a href="/app/templates">Templates</a>
-        <a href="/app/settings">Settings</a>
-        <a href="/app/logs">Logs</a>
+        <a href="/app" rel="home">Order Printer Pro</a>
+        <a href="/app/draft-orders">Draft Orders</a>
+        <a href="/app/templates">Manage Templates</a>
+        <a href="/app/settings">Automated PDFs</a>
+        <a href="/app/export-history">Export History</a>
+        <a href="/app/account">Account</a>
       </NavMenu>
       <Outlet />
     </AppProvider>

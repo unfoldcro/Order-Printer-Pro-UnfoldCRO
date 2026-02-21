@@ -26,14 +26,18 @@ model Session {
 }
 
 model Template {
-  id        String   @id @default(cuid())
-  shop      String
-  type      TemplateType
-  name      String
-  html      String   @db.Text
-  css       String   @db.Text @default("")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id              String   @id @default(cuid())
+  shop            String
+  type            TemplateType
+  name            String
+  html            String   @db.Text
+  css             String   @db.Text @default("")
+  preselectedOrders      Boolean @default(false)
+  preselectedDraftOrders Boolean @default(false)
+  preselectedPosOrders   Boolean @default(false)
+  pdfDownloads    Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
   @@index([shop])
 }
 

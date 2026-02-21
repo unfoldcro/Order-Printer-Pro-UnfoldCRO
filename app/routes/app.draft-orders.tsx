@@ -10,53 +10,50 @@ import {
   Badge,
   Link,
   useBreakpoints,
+  EmptyState,
 } from "@shopify/polaris";
 import { authenticate } from "../shopify.server";
 
-const ORDERS_QUERY = `
-  query GetOrders($first: Int!, $after: String) {
-    orders(first: $first, after: $after, sortKey: CREATED_AT, reverse: true) {
+const DRAFT_ORDERS_QUERY = `
+  query GetDraftOrders($first: Int!) {
+    draftOrders(first: $first, sortKey: UPDATED_AT, reverse: true) {
       edges {
         node {
           id
           name
           createdAt
-          displayFinancialStatus
-          displayFulfillmentStatus
-          note
+          updatedAt
+          status
           totalPriceSet { shopMoney { amount currencyCode } }
           customer { displayName }
+          note2
         }
-      }
-      pageInfo {
-        hasNextPage
-        endCursor
       }
     }
   }
 `;
 
-interface OrderNode {
+interface DraftOrderNode {
   id: string;
   name: string;
   createdAt: string;
-  displayFinancialStatus: string | null;
-  displayFulfillmentStatus: string | null;
-  note: string | null;
+  updatedAt: string;
+  status: string;
   totalPriceSet: { shopMoney: { amount: string; currencyCode: string } };
   customer: { displayName: string } | null;
+  note2: string | null;
 }
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin } = await authenticate.admin(request);
-  const response = await admin.graphql(ORDERS_QUERY, {
+  const response = await admin.graphql(DRAFT_ORDERS_QUERY, {
     variables: { first: 50 },
   });
   const data = await response.json();
-  const orders: OrderNode[] = (data.data?.orders?.edges ?? []).map(
-    (e: any) => e.node
-  );
-  return json({ orders });
+  const draftOrders: DraftOrderNode[] = (
+    data.data?.draftOrders?.edges ?? []
+  ).map((e: any) => e.node);
+  return json({ draftOrders });
 };
 
 function formatDate(iso: string): string {
@@ -85,63 +82,50 @@ function formatMoney(amount: string, currency: string): string {
   }
 }
 
-function financialBadge(status: string | null) {
-  if (!status) return <Badge>Unknown</Badge>;
+function statusBadge(status: string) {
   const s = status.toUpperCase();
-  if (s === "PAID") return <Badge tone="success">Paid</Badge>;
-  if (s === "PENDING") return <Badge tone="warning">Pending</Badge>;
-  if (s === "PARTIALLY_PAID")
-    return <Badge tone="attention">Partially paid</Badge>;
-  if (s === "REFUNDED") return <Badge tone="info">Refunded</Badge>;
-  if (s === "PARTIALLY_REFUNDED")
-    return <Badge tone="info">Partially refunded</Badge>;
-  if (s === "VOIDED") return <Badge tone="critical">Voided</Badge>;
+  if (s === "COMPLETED") return <Badge tone="success">Completed</Badge>;
+  if (s === "OPEN") return <Badge tone="info">Open</Badge>;
+  if (s === "INVOICE_SENT") return <Badge tone="attention">Invoice sent</Badge>;
   return <Badge>{status}</Badge>;
 }
 
-function extractOrderId(gid: string): string {
+function extractId(gid: string): string {
   return gid.split("/").pop() ?? gid;
 }
 
-export default function OrdersIndex() {
-  const { orders } = useLoaderData<typeof loader>();
+export default function DraftOrdersPage() {
+  const { draftOrders } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
   const { smUp } = useBreakpoints();
 
-  const resourceName = { singular: "order", plural: "orders" };
+  const resourceName = { singular: "draft order", plural: "draft orders" };
 
-  const rowMarkup = orders.map((order, index) => {
-    const orderId = extractOrderId(order.id);
+  const rowMarkup = draftOrders.map((order, index) => {
+    const id = extractId(order.id);
     return (
       <IndexTable.Row
-        id={orderId}
-        key={orderId}
+        id={id}
+        key={id}
         position={index}
-        onClick={() => navigate(`/app/orders/${orderId}`)}
+        onClick={() => navigate(`/app/orders/${id}?type=draft`)}
       >
         <IndexTable.Cell>
           <Text variant="bodyMd" fontWeight="bold" as="span">
-            <Link url={`/app/orders/${orderId}`} removeUnderline monochrome>
+            <Link url={`/app/orders/${id}?type=draft`} removeUnderline monochrome>
               {order.name}
             </Link>
           </Text>
         </IndexTable.Cell>
         <IndexTable.Cell>
           <Text as="span" tone="subdued">
-            {formatDate(order.createdAt)}
+            {formatDate(order.updatedAt)}
           </Text>
         </IndexTable.Cell>
         <IndexTable.Cell>
           {order.customer?.displayName ?? "—"}
         </IndexTable.Cell>
-        <IndexTable.Cell>
-          {financialBadge(order.displayFinancialStatus)}
-        </IndexTable.Cell>
-        <IndexTable.Cell>
-          <Text as="span" tone="subdued">
-            {order.note || "—"}
-          </Text>
-        </IndexTable.Cell>
+        <IndexTable.Cell>{statusBadge(order.status)}</IndexTable.Cell>
         <IndexTable.Cell>
           <Text as="span" alignment="end">
             {formatMoney(
@@ -155,26 +139,31 @@ export default function OrdersIndex() {
   });
 
   return (
-    <Page title="Orders" fullWidth>
+    <Page title="Draft Orders" fullWidth>
       <Layout>
         <Layout.Section>
           <Card padding="0">
-            <IndexTable
-              resourceName={resourceName}
-              itemCount={orders.length}
-              headings={[
-                { title: "Order" },
-                { title: "Date" },
-                { title: "Customer" },
-                { title: "Payment Status" },
-                { title: "Note" },
-                { title: "Total", alignment: "end" },
-              ]}
-              selectable={false}
-              condensed={!smUp}
-            >
-              {rowMarkup}
-            </IndexTable>
+            {draftOrders.length === 0 ? (
+              <EmptyState heading="No draft orders" image="">
+                <p>Draft orders from your Shopify store will appear here.</p>
+              </EmptyState>
+            ) : (
+              <IndexTable
+                resourceName={resourceName}
+                itemCount={draftOrders.length}
+                headings={[
+                  { title: "Draft Order" },
+                  { title: "Date" },
+                  { title: "Customer" },
+                  { title: "Status" },
+                  { title: "Total", alignment: "end" },
+                ]}
+                selectable={false}
+                condensed={!smUp}
+              >
+                {rowMarkup}
+              </IndexTable>
+            )}
           </Card>
         </Layout.Section>
       </Layout>

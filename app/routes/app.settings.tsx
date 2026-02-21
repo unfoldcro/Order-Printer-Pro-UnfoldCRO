@@ -2,8 +2,8 @@ import { json } from "@remix-run/node";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
 import { useLoaderData, useSubmit, useNavigation } from "@remix-run/react";
 import {
-  Page, Layout, Card, FormLayout, TextField, Select, Checkbox,
-  Button, BlockStack, Text, Toast, Frame
+  Page, Layout, Card, FormLayout, Select, Button,
+  BlockStack, Text, InlineStack, Toast, Frame, Box,
 } from "@shopify/polaris";
 import { useState, useCallback } from "react";
 import { authenticate } from "../shopify.server";
@@ -24,7 +24,12 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       },
     });
   }
-  return json({ settings });
+  const templates = await db.template.findMany({
+    where: { shop: session.shop },
+    orderBy: { name: "asc" },
+    select: { id: true, name: true },
+  });
+  return json({ settings, templates });
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -33,42 +38,45 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   await db.settings.upsert({
     where: { shop: session.shop },
     update: {
-      autoSendEnabled: form.get("autoSendEnabled") === "true",
+      autoSendEnabled: true,
       trigger: form.get("trigger") as "ORDER_CREATED" | "ORDER_PAID",
-      emailSubject: form.get("emailSubject") as string,
-      fromName: form.get("fromName") as string,
-      fromEmail: form.get("fromEmail") as string,
+      emailSubject: form.get("emailSubject") as string || "Your invoice for {{order.name}}",
+      fromName: form.get("fromName") as string || "",
+      fromEmail: form.get("fromEmail") as string || "",
     },
     create: {
       shop: session.shop,
-      autoSendEnabled: form.get("autoSendEnabled") === "true",
+      autoSendEnabled: true,
       trigger: form.get("trigger") as "ORDER_CREATED" | "ORDER_PAID",
-      emailSubject: form.get("emailSubject") as string,
-      fromName: form.get("fromName") as string,
-      fromEmail: form.get("fromEmail") as string,
+      emailSubject: form.get("emailSubject") as string || "Your invoice for {{order.name}}",
+      fromName: form.get("fromName") as string || "",
+      fromEmail: form.get("fromEmail") as string || "",
     },
   });
   return json({ ok: true });
 };
 
-export default function SettingsPage() {
-  const { settings } = useLoaderData<typeof loader>();
+export default function AutomatedPDFsPage() {
+  const { settings, templates } = useLoaderData<typeof loader>();
   const submit = useSubmit();
   const navigation = useNavigation();
-  const [autoSend, setAutoSend] = useState(settings.autoSendEnabled);
-  const [trigger, setTrigger] = useState(settings.trigger);
-  const [subject, setSubject] = useState(settings.emailSubject);
-  const [fromName, setFromName] = useState(settings.fromName);
-  const [fromEmail, setFromEmail] = useState(settings.fromEmail);
+  const [selectedTemplate, setSelectedTemplate] = useState(
+    templates.length > 0 ? templates[0].id : ""
+  );
   const [toastActive, setToastActive] = useState(false);
 
-  const handleSave = () => {
+  const templateOptions = templates.map((t: any) => ({
+    label: t.name,
+    value: t.id,
+  }));
+
+  const handleSetup = () => {
     const form = new FormData();
-    form.append("autoSendEnabled", String(autoSend));
-    form.append("trigger", trigger);
-    form.append("emailSubject", subject);
-    form.append("fromName", fromName);
-    form.append("fromEmail", fromEmail);
+    form.append("trigger", "ORDER_PAID");
+    form.append("templateId", selectedTemplate);
+    form.append("emailSubject", "Your invoice");
+    form.append("fromName", "");
+    form.append("fromEmail", "");
     submit(form, { method: "post" });
     setToastActive(true);
   };
@@ -76,62 +84,67 @@ export default function SettingsPage() {
   return (
     <Frame>
       <Page
-        title="Email Settings"
-        primaryAction={{
-          content: "Save",
-          onAction: handleSave,
-          loading: navigation.state === "submitting",
-        }}
+        title="Automated PDFs"
+        secondaryActions={[
+          { content: "Help & Support", onAction: () => {} },
+        ]}
       >
         <Layout>
           <Layout.Section>
             <Card>
-              <FormLayout>
-                <Checkbox
-                  label="Enable auto-send"
-                  checked={autoSend}
-                  onChange={setAutoSend}
-                  helpText="Automatically email documents when an order event occurs."
-                />
-                <Select
-                  label="Trigger event"
-                  options={[
-                    { label: "Order Created", value: "ORDER_CREATED" },
-                    { label: "Order Paid", value: "ORDER_PAID" },
-                  ]}
-                  value={trigger}
-                  onChange={(v) => setTrigger(v as any)}
-                  disabled={!autoSend}
-                />
-                <TextField
-                  label="Email Subject"
-                  value={subject}
-                  onChange={setSubject}
-                  autoComplete="off"
-                  helpText="Supports {{order.name}} token."
-                  disabled={!autoSend}
-                />
-                <TextField
-                  label="From Name"
-                  value={fromName}
-                  onChange={setFromName}
-                  autoComplete="off"
-                  disabled={!autoSend}
-                />
-                <TextField
-                  label="From Email"
-                  value={fromEmail}
-                  onChange={setFromEmail}
-                  autoComplete="email"
-                  type="email"
-                  disabled={!autoSend}
-                />
-              </FormLayout>
+              <InlineStack gap="800" align="space-between" blockAlign="start">
+                <BlockStack gap="400">
+                  <Text variant="headingLg" as="h2">Automated PDF delivery</Text>
+                  <Text as="p">
+                    Deliver documents to customers automatically, by adding PDF download links
+                    to your Shopify emails and website.
+                  </Text>
+                  <Text as="p">
+                    We recommend adding an invoice/receipt link to your Shipping confirmation emails.
+                  </Text>
+                  <BlockStack gap="300">
+                    {templateOptions.length > 0 ? (
+                      <Select
+                        label="Template to use"
+                        options={templateOptions}
+                        value={selectedTemplate}
+                        onChange={setSelectedTemplate}
+                      />
+                    ) : (
+                      <Text as="p" tone="subdued">
+                        No templates found. Create a template first.
+                      </Text>
+                    )}
+                    <Button
+                      variant="primary"
+                      fullWidth
+                      onClick={handleSetup}
+                      loading={navigation.state === "submitting"}
+                      disabled={!selectedTemplate}
+                    >
+                      Setup PDF link
+                    </Button>
+                  </BlockStack>
+                </BlockStack>
+                <div style={{ minWidth: 200, textAlign: "center" }}>
+                  <svg width="180" height="180" viewBox="0 0 200 200" fill="none">
+                    <circle cx="120" cy="100" r="80" fill="#E8EAFF" />
+                    <rect x="40" y="50" width="100" height="120" rx="8" fill="#fff" stroke="#ccc" strokeWidth="2" />
+                    <rect x="55" y="70" width="70" height="8" rx="2" fill="#e2e2e2" />
+                    <rect x="55" y="86" width="50" height="6" rx="2" fill="#e2e2e2" />
+                    <rect x="55" y="100" width="60" height="6" rx="2" fill="#e2e2e2" />
+                    <rect x="55" y="114" width="40" height="6" rx="2" fill="#e2e2e2" />
+                    <rect x="100" y="30" width="70" height="90" rx="8" fill="#3B5BDB" />
+                    <text x="115" y="70" fill="#fff" fontSize="14" fontWeight="bold">PDF</text>
+                    <text x="115" y="90" fill="#C5D0FF" fontSize="10">file</text>
+                  </svg>
+                </div>
+              </InlineStack>
             </Card>
           </Layout.Section>
         </Layout>
         {toastActive && (
-          <Toast content="Settings saved" onDismiss={() => setToastActive(false)} />
+          <Toast content="PDF link setup saved" onDismiss={() => setToastActive(false)} />
         )}
       </Page>
     </Frame>
