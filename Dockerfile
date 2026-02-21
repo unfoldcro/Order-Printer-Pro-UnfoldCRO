@@ -76,5 +76,7 @@ ENV PORT=3000
 
 EXPOSE 3000
 
-# Run DB migrations then start the web server
-CMD ["sh", "-c", "npx prisma migrate deploy && node server.js"]
+# Apply DB schema and start the web server.
+# prisma db push is used instead of migrate deploy because no migration files
+# exist in this repo yet. It applies the schema directly to the database.
+CMD ["sh", "-c", "npx prisma db push --accept-data-loss && node server.js"]
