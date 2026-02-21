@@ -11,7 +11,7 @@
 # ─────────────────────────────────────────────────────────────
 
 name = "order-docs-printer"
-client_id = "YOUR_SHOPIFY_API_KEY"       # ← replace with your API key / Client ID from partners.shopify.com
+client_id = "3c0807d8b7d4389bc7ebf829472ee5d0"       # Shopify API key / Client ID
 application_url = "https://order-printer-pro-unfoldcro.onrender.com"
 embedded = true
 
