@@ -1,6 +1,18 @@
+# ─────────────────────────────────────────────────────────────
+# FIELDS TO FILL IN THIS FILE:
+#
+# client_id       → Your Shopify app's API key (Client ID).
+#                   Found at: partners.shopify.com → Apps → [Your App] → App setup
+#
+# application_url → The public HTTPS URL where this app is hosted.
+#                   Replace ALL three occurrences of the placeholder URL below.
+#                   Use your tunnel URL for local dev (e.g. https://abc.ngrok.io)
+#                   or your production domain.
+# ─────────────────────────────────────────────────────────────
+
 name = "order-docs-printer"
-client_id = "SHOPIFY_API_KEY_PLACEHOLDER"
-application_url = "https://PLACEHOLDER.example.com"
+client_id = "YOUR_SHOPIFY_API_KEY"       # ← replace with your API key / Client ID
+application_url = "https://YOUR_APP_URL" # ← replace with your public HTTPS app URL
 embedded = true
 
 [access_scopes]
@@ -8,9 +20,9 @@ scopes = "read_orders,read_customers"
 
 [auth]
 redirect_urls = [
-  "https://PLACEHOLDER.example.com/auth/callback",
-  "https://PLACEHOLDER.example.com/auth/shopify/callback",
-  "https://PLACEHOLDER.example.com/api/auth/callback"
+  "https://YOUR_APP_URL/auth/callback",         # ← replace YOUR_APP_URL
+  "https://YOUR_APP_URL/auth/shopify/callback", # ← replace YOUR_APP_URL
+  "https://YOUR_APP_URL/api/auth/callback"      # ← replace YOUR_APP_URL
 ]
 
 [webhooks]
