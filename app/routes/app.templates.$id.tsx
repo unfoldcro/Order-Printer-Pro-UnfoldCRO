@@ -1,12 +1,12 @@
 import { json, redirect } from "@remix-run/node";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
-import { useLoaderData, useSubmit, useNavigation } from "@remix-run/react";
+import { useLoaderData, useSubmit, useNavigation, useActionData } from "@remix-run/react";
 import {
   Page, Layout, Card, FormLayout, TextField, Checkbox,
   Button, InlineStack, BlockStack, Text, Divider, Toast,
   Frame, Tabs, Banner, Box,
 } from "@shopify/polaris";
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { authenticate } from "../shopify.server";
 import { db } from "../db.server";
 import { renderTemplate, buildOrderData } from "../lib/renderer.server";
@@ -84,19 +84,31 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 
 export default function TemplateEditor() {
   const { template, liquidVariableSections: sections } = useLoaderData<typeof loader>();
+  const actionData = useActionData<typeof action>();
   const submit = useSubmit();
   const navigation = useNavigation();
   const [name, setName] = useState(template.name);
   const [type, setType] = useState(template.type);
   const [html, setHtml] = useState(template.html);
   const [css, setCss] = useState(template.css);
-  const [preselectedOrders, setPreselectedOrders] = useState(template.preselectedOrders);
-  const [preselectedDraftOrders, setPreselectedDraftOrders] = useState(template.preselectedDraftOrders);
-  const [preselectedPosOrders, setPreselectedPosOrders] = useState(template.preselectedPosOrders);
+  const [preselectedOrders, setPreselectedOrders] = useState(template.preselectedOrders ?? false);
+  const [preselectedDraftOrders, setPreselectedDraftOrders] = useState(template.preselectedDraftOrders ?? false);
+  const [preselectedPosOrders, setPreselectedPosOrders] = useState(template.preselectedPosOrders ?? false);
   const [preview, setPreview] = useState<string | null>(null);
   const [toastActive, setToastActive] = useState(false);
   const [selectedTab, setSelectedTab] = useState(0);
   const [variableSearch, setVariableSearch] = useState("");
+
+  // When action returns a preview, update state
+  useEffect(() => {
+    if (actionData && 'preview' in actionData && actionData.preview) {
+      setPreview(actionData.preview as string);
+      setSelectedTab(1);
+    }
+    if (actionData && 'saved' in actionData && actionData.saved) {
+      setToastActive(true);
+    }
+  }, [actionData]);
 
   const isSaving = navigation.state === "submitting";
 
@@ -111,20 +123,14 @@ export default function TemplateEditor() {
     form.append("preselectedDraftOrders", String(preselectedDraftOrders));
     form.append("preselectedPosOrders", String(preselectedPosOrders));
     submit(form, { method: "post" });
-    setToastActive(true);
   };
 
-  const handlePreview = async () => {
+  const handlePreview = () => {
     const form = new FormData();
     form.append("intent", "preview");
     form.append("html", html);
     form.append("css", css);
-    const res = await fetch(window.location.href, { method: "POST", body: form });
-    const data = await res.json();
-    if (data.preview) {
-      setPreview(data.preview);
-      setSelectedTab(1);
-    }
+    submit(form, { method: "post" });
   };
 
   const handleTabChange = useCallback((index: number) => {

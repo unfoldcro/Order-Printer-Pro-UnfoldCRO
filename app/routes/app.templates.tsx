@@ -12,9 +12,26 @@ import { db } from "../db.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
-  const templates = await db.template.findMany({
+  const rawTemplates = await db.template.findMany({
     where: { shop: session.shop },
     orderBy: { updatedAt: "desc" },
+  });
+  // Pre-compute time-ago strings on server to avoid hydration mismatch
+  const now = Date.now();
+  const templates = rawTemplates.map((t) => {
+    const diffMs = now - new Date(t.updatedAt).getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    let timeAgo = "today";
+    if (diffDays === 1) timeAgo = "yesterday";
+    else if (diffDays > 1 && diffDays < 30) timeAgo = `${diffDays} days ago`;
+    else if (diffDays >= 30 && diffDays < 365) {
+      const months = Math.floor(diffDays / 30);
+      timeAgo = months === 1 ? "1 month ago" : `${months} months ago`;
+    } else if (diffDays >= 365) {
+      const years = Math.floor(diffDays / 365);
+      timeAgo = years === 1 ? "last year" : `${years} years ago`;
+    }
+    return { ...t, timeAgo };
   });
   return json({ templates });
 };
@@ -45,22 +62,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
   return json({ ok: false });
 };
-
-function formatTimeAgo(dateStr: string): string {
-  const d = new Date(dateStr);
-  const now = new Date();
-  const diffMs = now.getTime() - d.getTime();
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-  if (diffDays < 1) return "today";
-  if (diffDays === 1) return "yesterday";
-  if (diffDays < 30) return `${diffDays} days ago`;
-  if (diffDays < 365) {
-    const months = Math.floor(diffDays / 30);
-    return months === 1 ? "1 month ago" : `${months} months ago`;
-  }
-  const years = Math.floor(diffDays / 365);
-  return years === 1 ? "last year" : `${years} years ago`;
-}
 
 function preselectedLabel(t: any): string {
   const parts: string[] = [];
@@ -105,7 +106,7 @@ export default function Templates() {
         <Text as="span">{preselectedLabel(t)}</Text>
       </IndexTable.Cell>
       <IndexTable.Cell>
-        <Text as="span" tone="subdued">{formatTimeAgo(t.updatedAt)}</Text>
+        <Text as="span" tone="subdued">{t.timeAgo}</Text>
       </IndexTable.Cell>
       <IndexTable.Cell>
         <Text as="span">{t.pdfDownloads ?? 0}</Text>
