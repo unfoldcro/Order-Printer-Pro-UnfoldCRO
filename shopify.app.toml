@@ -1,0 +1,40 @@
+# ─────────────────────────────────────────────────────────────
+# FIELDS TO FILL IN THIS FILE:
+#
+# client_id       → Your Shopify app's API key (Client ID).
+#                   Found at: partners.shopify.com → Apps → [Your App] → App setup
+#
+# application_url → The public HTTPS URL where this app is hosted.
+#                   Replace ALL three occurrences of the placeholder URL below.
+#                   Use your tunnel URL for local dev (e.g. https://abc.ngrok.io)
+#                   or your production domain.
+# ─────────────────────────────────────────────────────────────
+
+name = "order-docs-printer"
+client_id = "YOUR_SHOPIFY_API_KEY"       # ← replace with your API key / Client ID from partners.shopify.com
+application_url = "https://order-printer-pro-unfoldcro.onrender.com"
+embedded = true
+
+[access_scopes]
+scopes = "read_orders,read_customers"
+
+[auth]
+redirect_urls = [
+  "https://order-printer-pro-unfoldcro.onrender.com/auth/callback",
+  "https://order-printer-pro-unfoldcro.onrender.com/auth/shopify/callback",
+  "https://order-printer-pro-unfoldcro.onrender.com/api/auth/callback"
+]
+
+[webhooks]
+api_version = "2025-01"
+
+  [[webhooks.subscriptions]]
+  topics = ["orders/create"]
+  uri = "/webhooks/orders-create"
+
+  [[webhooks.subscriptions]]
+  topics = ["orders/paid"]
+  uri = "/webhooks/orders-paid"
+
+[pos]
+embedded = false
