@@ -3,6 +3,9 @@
 This page lists every field you must fill in before the app will work.
 There are **two config files** and **one in-app settings page**.
 
+> **Deploying to Render?** See [RENDER_DEPLOY.md](./RENDER_DEPLOY.md) for a
+> copy-paste table of every environment variable and a step-by-step guide.
+
 ---
 
 ## 1. `.env` file (copy from `.env.example`)
