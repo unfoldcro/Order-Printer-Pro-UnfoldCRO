@@ -66,7 +66,8 @@ COPY --from=builder /app/build ./build
 COPY --from=builder /app/prisma ./prisma
 
 # Copy runtime files
-COPY package.json package-lock.json server.js worker.js ./
+COPY package.json package-lock.json server.js worker.js start.sh ./
+RUN chmod +x start.sh
 
 # Install Playwright Chromium browser inside the image
 RUN npx playwright install chromium
@@ -76,7 +77,6 @@ ENV PORT=3000
 
 EXPOSE 3000
 
-# Apply DB schema and start the web server.
-# prisma db push is used instead of migrate deploy because no migration files
-# exist in this repo yet. It applies the schema directly to the database.
-CMD ["sh", "-c", "npx prisma db push --accept-data-loss && node server.js"]
+# start.sh validates required env vars, runs prisma db push, then starts the server.
+# If any required env var is missing it exits with a clear error message.
+CMD ["./start.sh"]
