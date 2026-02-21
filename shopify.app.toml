@@ -11,8 +11,8 @@
 # ─────────────────────────────────────────────────────────────
 
 name = "order-docs-printer"
-client_id = "YOUR_SHOPIFY_API_KEY"       # ← replace with your API key / Client ID
-application_url = "https://YOUR_APP_URL" # ← replace with your public HTTPS app URL
+client_id = "YOUR_SHOPIFY_API_KEY"       # ← replace with your API key / Client ID from partners.shopify.com
+application_url = "https://order-printer-pro-unfoldcro.onrender.com"
 embedded = true
 
 [access_scopes]
@@ -20,9 +20,9 @@ scopes = "read_orders,read_customers"
 
 [auth]
 redirect_urls = [
-  "https://YOUR_APP_URL/auth/callback",         # ← replace YOUR_APP_URL
-  "https://YOUR_APP_URL/auth/shopify/callback", # ← replace YOUR_APP_URL
-  "https://YOUR_APP_URL/api/auth/callback"      # ← replace YOUR_APP_URL
+  "https://order-printer-pro-unfoldcro.onrender.com/auth/callback",
+  "https://order-printer-pro-unfoldcro.onrender.com/auth/shopify/callback",
+  "https://order-printer-pro-unfoldcro.onrender.com/api/auth/callback"
 ]
 
 [webhooks]

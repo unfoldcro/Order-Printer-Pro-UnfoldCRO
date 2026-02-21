@@ -1,7 +1,9 @@
 # Deploying to Render — Exact Values for Every Field
 
-This guide gives you the exact value to paste into each field of Render's
-**New Web Service** form.
+> **✅ API updated in Render** — Environment variables have been set.
+> The live service URL is: **https://order-printer-pro-unfoldcro.onrender.com**
+>
+> Remaining steps are highlighted below.
 
 ---
 
@@ -11,7 +13,7 @@ This guide gives you the exact value to paste into each field of Render's
 
 | Field | Value to enter |
 |---|---|
-| **Name** | `order-docs-printer` |
+| **Name** | `Order-Printer-Pro-UnfoldCRO` |
 | **Language / Runtime** | `Docker` |
 | **Branch** | `copilot/add-document-templates-feature` |
 | **Region** | `Singapore (Southeast Asia)` *(or match your existing services)* |
@@ -20,23 +22,76 @@ This guide gives you the exact value to paste into each field of Render's
 
 ---
 
-## Environment Variables — Copy-Paste Table
+## Environment Variables — Status
 
-Add each row below in the Render **Environment Variables** section.
-
-> **Tip:** Click **"Add from .env"** and paste the block at the bottom of this
-> file to add all variables at once.
-
-| NAME | VALUE | Notes |
+| NAME | VALUE | Status |
 |---|---|---|
-| `SHOPIFY_API_KEY` | *(your API key)* | Shopify Partner Dashboard → Apps → Your App → API key |
-| `SHOPIFY_API_SECRET` | *(your API secret)* | Same page → API secret key — mark as **Secret** |
-| `SHOPIFY_APP_URL` | `https://order-docs-printer.onrender.com` | Your Render service URL — update after first deploy |
-| `SCOPES` | `read_orders,read_customers` | Copy exactly as shown |
-| `DATABASE_URL` | *(auto-filled by Render)* | If using Render Postgres, copy the **Internal Database URL** from the DB dashboard |
-| `SENDGRID_API_KEY` | `SG.xxxxxxxxxxxxxxxxxx` | [app.sendgrid.com/settings/api_keys](https://app.sendgrid.com/settings/api_keys) — mark as **Secret** |
-| `NODE_ENV` | `production` | Copy exactly |
-| `PORT` | `3000` | Copy exactly |
+| `SHOPIFY_API_KEY` | *(your API key)* | ✅ Set in Render |
+| `SHOPIFY_API_SECRET` | *(your API secret)* | ✅ Set in Render |
+| `SHOPIFY_APP_URL` | `https://order-printer-pro-unfoldcro.onrender.com` | ✅ Set in Render |
+| `SCOPES` | `read_orders,read_customers` | ✅ Set in Render |
+| `DATABASE_URL` | *(Internal Database URL from Render Postgres)* | ✅ Set in Render |
+| `SENDGRID_API_KEY` | `SG.xxxxxxxxxxxxxxxxxx` | ✅ Set in Render |
+| `NODE_ENV` | `production` | ✅ Set in Render |
+| `PORT` | `3000` | ✅ Set in Render |
+
+---
+
+## ⚠️ Remaining Steps After API Update
+
+Now that the API keys are set in Render, complete these steps so Shopify
+can communicate with your app:
+
+### 1. Update Shopify Partner Dashboard — App URL
+
+1. Go to [partners.shopify.com](https://partners.shopify.com) → **Apps** → your app
+2. Click **App setup**
+3. Set **App URL** to:
+   ```
+   https://order-printer-pro-unfoldcro.onrender.com
+   ```
+4. Set **Allowed redirection URL(s)** to these three values:
+   ```
+   https://order-printer-pro-unfoldcro.onrender.com/auth/callback
+   https://order-printer-pro-unfoldcro.onrender.com/auth/shopify/callback
+   https://order-printer-pro-unfoldcro.onrender.com/api/auth/callback
+   ```
+5. Click **Save**
+
+### 2. Update `shopify.app.toml` — client_id
+
+Open `shopify.app.toml` and replace `YOUR_SHOPIFY_API_KEY` with your actual
+Shopify API key (the same value you put in `SHOPIFY_API_KEY` on Render):
+
+```toml
+client_id = "your_actual_api_key_here"
+```
+
+The `application_url` and `redirect_urls` are already updated to the live Render URL.
+
+### 3. Install the app on your test store
+
+Visit:
+```
+https://order-printer-pro-unfoldcro.onrender.com/?shop=your-store.myshopify.com
+```
+
+Or install via Shopify Partner Dashboard → **Apps** → your app → **Test on development store**.
+
+### 4. Run database migrations (if not done automatically)
+
+If migrations didn't run on deploy, trigger them manually:
+
+1. Render Dashboard → your web service → **Shell**
+2. Run:
+   ```bash
+   npx prisma migrate deploy
+   ```
+
+### 5. Verify the app is live
+
+- Open `https://order-printer-pro-unfoldcro.onrender.com` — should redirect to Shopify OAuth
+- Check Render logs: Dashboard → your service → **Logs**
 
 ---
 
@@ -61,15 +116,7 @@ Add each row below in the Render **Environment Variables** section.
 4. In **Environment Variables**, add all variables from the table above
 5. Click **Create Web Service**
 
-### 3. After first deploy — update SHOPIFY_APP_URL
-
-1. Copy your Render URL: `https://order-docs-printer.onrender.com`
-2. Render Dashboard → Your service → **Environment** → Update `SHOPIFY_APP_URL`
-3. Also update the same URL in:
-   - Shopify Partner Dashboard → App setup → **App URL**
-   - `shopify.app.toml` → `application_url` and all three `redirect_urls`
-
-### 4. Create the Background Worker service (optional — for auto-email)
+### 3. Create the Background Worker service (for auto-email)
 
 1. Render Dashboard → **New** → **Background Worker**
 2. Connect same repo, same branch
@@ -89,12 +136,10 @@ A `render.yaml` file is included in this repo. It provisions everything
 2. Connect `unfoldcro/Order-Printer-Pro-UnfoldCRO`
 3. Render reads `render.yaml` and shows a preview of what will be created
 4. Click **Apply**
-5. After deploy, go to each service → **Environment** and fill in the three
-   secret values marked `sync: false`:
+5. After deploy, go to each service → **Environment** and fill in secrets:
    - `SHOPIFY_API_KEY`
    - `SHOPIFY_API_SECRET`
    - `SENDGRID_API_KEY`
-   - `SHOPIFY_APP_URL` (set to your Render URL once it's created)
 
 ---
 
@@ -106,7 +151,7 @@ variables section. Then update each placeholder value.
 ```env
 SHOPIFY_API_KEY=PASTE_YOUR_API_KEY_HERE
 SHOPIFY_API_SECRET=PASTE_YOUR_API_SECRET_HERE
-SHOPIFY_APP_URL=https://order-docs-printer.onrender.com
+SHOPIFY_APP_URL=https://order-printer-pro-unfoldcro.onrender.com
 SCOPES=read_orders,read_customers
 DATABASE_URL=PASTE_INTERNAL_DATABASE_URL_FROM_RENDER_POSTGRES
 SENDGRID_API_KEY=SG.PASTE_YOUR_SENDGRID_KEY_HERE
@@ -135,24 +180,22 @@ PORT=3000
 3. Copy the key (starts with `SG.`)
 4. Also verify your sender email: **Settings** → **Sender Authentication**
 
-### SHOPIFY_APP_URL
-- After Render deploys your service it assigns a URL like:
-  `https://order-docs-printer.onrender.com`
-- Copy that URL and paste it as `SHOPIFY_APP_URL`
-- Update the same URL in your Shopify Partner Dashboard → App setup → **App URL**
-
 ---
 
 ## Checklist
 
 ```
-□ Created Render PostgreSQL database → copied Internal Database URL
-□ Created Render Web Service with Docker runtime
-□ Filled all 8 environment variables (see table above)
-□ Service deployed successfully (green "Live" status)
-□ Copied Render URL → updated SHOPIFY_APP_URL in Render env vars
-□ Updated Shopify Partner Dashboard App URL to match Render URL
-□ Updated shopify.app.toml → application_url + redirect_urls
-□ Created Background Worker service (for auto-email)
-□ Verified app loads at https://order-docs-printer.onrender.com
+✅ Created Render PostgreSQL database → copied Internal Database URL
+✅ Created Render Web Service with Docker runtime
+✅ Filled all 8 environment variables in Render
+✅ API keys set in Render (SHOPIFY_API_KEY, SHOPIFY_API_SECRET, SENDGRID_API_KEY)
+✅ SHOPIFY_APP_URL set to https://order-printer-pro-unfoldcro.onrender.com
+□  Updated Shopify Partner Dashboard → App URL to Render URL
+□  Updated Shopify Partner Dashboard → Allowed redirection URLs (3 values)
+□  Updated shopify.app.toml → client_id with your actual API key
+□  Installed app on test store
+□  Verified app loads and redirects to Shopify OAuth
+□  Created Background Worker service (for auto-email)
+□  Confirmed logs show successful startup
 ```
+

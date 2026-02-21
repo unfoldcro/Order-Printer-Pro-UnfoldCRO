@@ -48,9 +48,8 @@ services:
         value: "3000"
 
       # Set this to your Render service URL after first deploy
-      # Format: https://order-docs-printer.onrender.com
       - key: SHOPIFY_APP_URL
-        sync: false
+        value: https://order-printer-pro-unfoldcro.onrender.com
 
   # ── Background Worker ─────────────────────────────────────
   - type: worker
